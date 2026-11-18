@@ -1,0 +1,27 @@
+id = "simplylight"
+name = "Simply Light"
+version = "0.2.0"
+description = """One hundred and sixty light-emitting decorative blocks in ten families, one per
+vanilla dye colour: plain lamps in off and on variants, slabs and panels, wall lamps, bulbs, rod
+lamps, three-block lamp posts, and edge lights. Everything is carried content — the 160 block
+declarations, 2048 states, models, textures, 234 recipes and 12 tags — plus the port's census model
+in src/, which registers nothing from Rust. Redstone toggling, the lamp-post column, tooltips and
+the edge-light editor are not ported yet."""
+authors = ["Flanks255 (upstream)", "Horizon native mod contributors"]
+# The SDK package (mod API 0.2): one flat .hmod carrying the blocks in data/ and assets/,
+# and the carried census model in src/. The id is the resource namespace and the only
+# identity.
+api = "0.2"
+# The installation side, not the hook's: single player and a LAN host are a client
+# installation with an integrated server, so a content mod that must appear in both
+# belongs on "both".
+side = "both"
+# Required by the manifest schema ("May add blocks, items, mob effects and entity types").
+# This package registers its 160 blocks and items as content declarations; Rust registers
+# nothing, and the schema's one shared value is still mandatory.
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "0b14f8acfd97fa2c750e42795249dcc981178ca4"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"
