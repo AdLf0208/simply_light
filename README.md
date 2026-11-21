@@ -1,68 +1,83 @@
-# Simply Light — a Horizon port
+# Simply Light
 
-**Simply Light** is a Minecraft mod. Simply Light. This repository is a **port of it to [Horizon](https://github.com/horizon-rust/horizon)**, the Rust engine for Minecraft Java 26.3. It carries the complete source of the port plus the content files it ships, and installs as a single `.hmod` package.
+A Horizon port of [Simply Light 1.5.3+1.21.1-b4](https://github.com/Flanks255/simplylight)
+(MIT, by Flanks255) for Minecraft Java 26.3: **one hundred and sixty light-emitting
+decorative blocks** in ten families × sixteen dye colours — off and on lamps,
+slabs, panels, wall lamps, bulbs, rod lamps, three-block lamp posts, and edge
+lights (bottom and top).
 
-Upstream: [Flanks255/simplylight](https://github.com/Flanks255/simplylight) — licence **MIT**.
+This is a **content mod** (mod API `0.2`, registry kind `mod`): one flat `.hmod`
+holding the block declarations, states, models, textures, loot tables and 234
+recipes in `data/` and `assets/`. It carries **no code** — no crate, no hooks, no
+native half — so it loads on any Horizon at the mod API it names.
 
-| | |
-|---|---|
-| Upstream mod | Simply Light ([source](https://github.com/Flanks255/simplylight)) |
-| Ported to | Horizon 0b14f8a, Minecraft Java 26.3, mod API `0.2` |
-| Package | `simplylight.hmod` (install it with the Horizon launcher) |
-| Licence | **MIT** — the upstream mod's licence; see [Licence and credit](#licence-and-credit) |
+## Install
 
-## What this port implements
+Put `simplylight.hmod` in the game folder's `horizon-mods/` and turn it on in
+Options > Mods. The game reads content once at start, so restart after adding it.
+Servers and LAN guests need the same file.
 
-- **160 blocks** = 10 families × 16 colours, all registered with a block item;
-- `LampBlock` (`illuminant_block` / `illuminant_block_on`): the block id is the
-- `ThinLamp` (panel thickness 4/16, slab 8/16), `Fixture` (wall lamp),
-- `LampPost`: `position` (bottom/middle/top) × `waterlogged`, placed as a
-- `EdgeLight`/`EdgeLightTop`: four side booleans × `waterlogged`, light 14,
-- Loot: `dropSelf` for every block; recipes: 234 total (block, bulb, edge,
-- Tooltips: `BaseBlockItem.appendHoverText` prints `block.simplylight.<id>.info*`
-- **Panel/slab/wall lamp/bulb need a support and break without it.** They copy
+## Build and check
 
-## Not yet ported
-
-- **Redstone toggle of the illuminant blocks** (`neighborChanged`,
-- **The 3-block lamp-post column** (place/remove cascade) and its per-position
-- **The edge-light sneak-use editor GUI** (screen + network packet) and the
-- **Tooltips** (`appendHoverText`, the shift hint and `.info*` lang keys) —
-- **Item behaviour**: the lamp-post item's `+4.0` attack damage and the
-- **Fluid behaviour was not exercised**: the waterlogged *states* bind and the
-- **The optional CTM resource pack** (`optional_fullblock_ctm`, a built-in
-- **No JEI plugin** (upstream ships one); Horizon's recipe viewer is built in.
-
-## Installing
-
-1. Install the [Horizon launcher](https://github.com/horizon-rust/horizon/releases) (0.2.70 or newer).
-2. Add `simplylight.hmod` to the instance's mods.
-3. The package is pinned to a specific Horizon build; the launcher checks that pin.
-
-## Licence and credit
-
-Simply Light was created by its upstream authors; the code, models and assets in the original mod
-remain theirs and are used here under **MIT**. The Rust in this repository is a clean-room
-rewrite for Horizon, not a translation of the original source.
-
-- `LICENSE` — the upstream licence text.
-- `LICENSE-NOTICE.md` — what this port carries and where it came from.
-- The upstream project: https://github.com/Flanks255/simplylight
-
-## Technical details
-
-```
-horizon-mod.toml   package manifest (id, version, api, [native] pin)
-Cargo.toml         the crate; depends on `horizon-mod-api` from the fetched SDK
-src/               lib.rs (the one `impl Hooks`), runtime.rs (pure logic + tests), glue
-assets/ data/      the content the package ships
-tools/             content generators and the e2e scenario
+```bash
+cargo horizon-mod build          # -> target/horizon-mod/simplylight.hmod
+cargo horizon-mod check simplylight.hmod
 ```
 
-- Build: `cargo horizon-mod build` (packages; it does not compile against the game).
-- Test: `cargo test`, `cargo clippy --all-targets -- -D warnings`.
-- In-game: `ports/tools/launcher-game.sh run simplylight` in the campaign tree, or install the
-  `.hmod` and play; the harness scenario is `tools/e2e.sh`.
+`check` validates the manifest, the package layout and the content root. There
+are two in-game legs, both launching a game at the mod API pin with
+`--dev-mod simplylight.hmod` (see each script's header for the exact command):
+`tools/e2e.sh` (ids, 2048 states, light, drops, items, placement) and
+`tools/data_parity.sh` (every carried recipe, every loot table, and water flowing
+into the waterlogged families).
 
-This repository is generated from the campaign's port at `ports/simplylight/`; the port's own
-`notes.md` is the full record (decisions, traps, evidence).
+## Contents
+
+| Path | Files | What |
+|---|---:|---|
+| `horizon-mod.toml` | 1 | the only manifest: `simplylight` 0.2.1, API 0.2, content mod |
+| `assets/simplylight/blockstates/` | 160 | one per block; the declared state space |
+| `assets/simplylight/models/block/` | 210 | upstream block models (multi-variant families too) |
+| `assets/simplylight/models/item/` | 160 | upstream item models |
+| `assets/simplylight/items/` | 160 | 26.3 item model definitions |
+| `assets/simplylight/textures/` | 152 + 33 | upstream PNGs and their `.mcmeta` animations |
+| `assets/simplylight/lang/` | 7 | upstream locales |
+| `data/simplylight/horizon/block/` | 160 | template + properties + shapes + light |
+| `data/simplylight/horizon/creative_tab/` | 1 | the `Simply Light` tab, 160 items |
+| `data/simplylight/loot_table/blocks/` | 160 | `dropSelf` (26.3 singular typed condition) |
+| `data/simplylight/recipe/` | 234 | block, bulb, edge, slab, panel, rod, wall lamp, post, dye and toggle |
+| `data/simplylight/tags/item/` | 10 | upstream's `any_<family>` dye-recipe tags |
+| `data/minecraft/tags/block/` | 2 | `mineable/pickaxe` (all 160), `wall_post_override` |
+| `data/c/tags/item/` | 3 | `c:stones`, `c:dusts/redstone`, `c:dusts/glowstone` (26.3 ships no `c:`) |
+| `data/simplylight/license/` | 2 | the MIT text and the provenance notice |
+| `tools/` | 6 | `gen_content.py`, `craft_check.py`, `e2e.sh`, `hmod-load.sh`, `data_parity.sh`, `data_parity.py` (not packed) |
+
+The `assets/` and `data/` trees are generated by
+[`tools/gen_content.py`](tools/gen_content.py) from the upstream jar: its
+`assets/` and `data/` are copied (and upgraded to the 26.3 formats), and the 160
+block declarations plus the 83 recipes the carry tool could not place are written
+from the behaviour read in upstream's Java source. The jar itself is the evidence
+in `ports/_shared/carry-work/simplylight/`.
+
+## Scope and gaps
+
+Measured in game on this package (2026-11-21, Horizon `0a875da`): all 160 ids
+register, **2048/2048 states bind**, the light levels are upstream's (15 for
+panel/slab/wall/rod/post/on lamp, 14 for bulb and edge lights, 0 for the off
+lamp), all **234 recipes** craft their declared result with the ingredients
+consumed, all **160 loot tables** give exactly their own block, the tags resolve,
+the items place, the tab lists 160, and the eight waterlogged families take
+water at placement.
+
+Not ported (recorded in `notes.md`): the redstone toggle of the lamps, the
+lamp-post column's per-position light and place/break cascade, the edge-light
+editor screen, tooltips, the lamp-post item's attack damage, and the `Equipable`
+head slot. Three template-derived deviations are measured, not assumed — see
+`notes.md` §"Behaviour carried, and measured deviations".
+
+## Licence
+
+MIT — `Copyright (c) 2018 Flanks255`. The text and the provenance notice travel
+inside the package (`LICENSE`, `LICENSE-NOTICE.md`, and the copies under
+`data/simplylight/license/`). Local-only until the maintainer approves
+publishing (ARCHITECTURE.md §8).

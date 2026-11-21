@@ -22,18 +22,16 @@
 #   8. one item of every family places and reads back;
 #   9. unknown ids and invalid states are refused.
 #
-# STATUS (2026-11-18, SDK 0b14f8a): the port is one flat `.hmod` — content and code in the
-# same package — so the launch is `--dev-mod "$PORT/simplylight.hmod"`. The three 0.1.0 legs
-# (`--dev-mod content/`, the `.hmod`-load script, the deviation probe) are historical: their
-# logs are in ports/_shared/evidence/simplylight/e2e-*.log and describe the retired package.
+# STATUS (2026-11-19, SDK 0b14f8a): the delivered 0.2.0 package is **content-only** — a
+# `kind = "mod"` `.hmod` with `assets/` and `data/`, no `Cargo.toml`, no `src/`, no `[native]`
+# (the native 0.2.0 package is evidence in
+# `ports/_shared/evidence/simplylight/retired-native-0.2.0/`). A content package loads on any
+# game at the pin with `--dev-mod`, so this leg needs no launcher build: it runs on the
+# campaign's plain 0b14f8a export (`~/.cache/horizon-e2e/0b14f8a/control/horizon-client`).
 #
-# This script needs a **launcher-built** game carrying the package
-# (`horizon-launcher native-build <port> --instance <i> --trust-native-code`); the campaign
-# box has no `horizon-launcher`, so the flat package has no in-game run yet. Point `GAME=`
-# at the launcher build and re-run to record it.
-#
-#   GAME=<launcher-built horizon-client> tools/e2e.sh
-#   GAME=… CONTROL_GAME=<a build WITHOUT the package> tools/e2e.sh   # + the ids-unknown leg
+#   GAME=~/.cache/horizon-e2e/0b14f8a/control/horizon-client \
+#   CTL=~/.cache/horizon-e2e/0b14f8a/control/horizon-ctl tools/e2e.sh
+#   … CONTROL_GAME=<the same build, launched without the package>  # + the ids-unknown leg
 #
 # COUNTERFACTUAL=1 launches the same world WITHOUT `--dev-mod`: the same ids are unknown
 # there, and vanilla glowstone still emits 15, so the run is not vacuous. CONTROL_GAME adds

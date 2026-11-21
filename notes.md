@@ -1,8 +1,13 @@
 # Simply Light — port notes
 
 Ported from **Simply Light 1.5.3** (`Flanks255/simplylight`, MIT) for Minecraft
-Java 26.3 on Horizon **`1d63e0a5a37a7a708eb0b32b49bf0dfeb28ed8a9`** /
-horizon-mixins **`5a64af938ec86b00d53d16a408aabc0038fb3e57`** (schema 6).
+Java 26.3. The **current campaign pin is `0a875da91dbb0fdcb7ba8c42c11341aa229af51a`** /
+horizon-mixins **`e59da9094f0c2fdda6c627fe9eff22dec6a906f0`** (`api = "0.2"`,
+game 26.3, package format 6); the delivered package is **content-only and names no
+pin** (no `[native]`), and its evidence is measured at `0a875da` (0.2.1) and
+`0b14f8a` (0.2.0). The retired `.hnmod` bundle was built at `1d63e0a5` /
+`5a64af938ec86b00d53d16a408aabc0038fb3e57`; its evidence below is labelled
+historical.
 
 **Class + tier** (`ports/ledger.csv`; provenance
 `ports/_shared/source-map/atm10-sources.csv`): **content / data**. The approach
@@ -19,15 +24,20 @@ approves publishing** (ARCHITECTURE.md §8). It is being ported now because the
 licence-first queue puts a rank-0 content carry first, and the mod is one of the
 cleanest data-tier carries left.
 
-> **Status: the SDK package, version 0.2.0 (2026-11-18).** The `.hnmod` container is retired
-> (Horizon's mod-API merge #16941); this port is now **one flat `.hmod`** (`horizon-mod.toml`,
-> `Cargo.toml`, `src/`, and the content at the package root). Read
-> [`## Migration to the SDK format`](#migration-to-the-sdk-format-020-2026-11-18) first — it
-> has the file map, the helper→hook table, the package hashes, the traps and the gap list.
+> **Status: a content-only `kind = "mod"` package, version 0.2.1 (2026-11-21).** The delivered
+> artifact is `simplylight.hmod`, **689,910 B**, SHA-256
+> `7bbf9c31943b0641ff313178d0ce479426339879b528bdb47c959ef65b99118b`, 1,455 entries
+> (`horizon-mod.toml`, `assets/`, `data/`) — **no `Cargo.toml`, no `src/`, no `[native]`**.
+> It is measured in game at `0b14f8a` (the 0.2.0 state/light/drop/placement leg) and at
+> `0a875da` (0.2.1, that leg's carried bytes plus the recipe/loot/waterlogging parity leg);
+> evidence in `ports/_shared/evidence/simplylight-e2e/`. Read
+> [`## Content-only 0.2.0`](#content-only-020--the-registrys-kindmod-rule-2026-11-19) first;
+> it supersedes the native 0.2.0 package, which is kept byte for byte in
+> `ports/_shared/evidence/simplylight/retired-native-0.2.0/` and is described by
+> [`## Migration to the SDK format`](#migration-to-the-sdk-format-020-2026-11-18) (historical:
+> that section's package hash and file map describe the retired native package).
 > Everything from "Version and source" down to "Reviewer repairs" is the history of the
-> retired bundle at pin `1d63e0a5`; its **in-game logs are historical evidence of the same
-> carried content**, not of the flat package (which has had no in-game run yet: there is no
-> `horizon-launcher` on this box).
+> retired `.hnmod` bundle at pin `1d63e0a5`.
 
 Status before the migration: **implemented and verified in-game** at pin `1d63e0a5`
 (2026-11-09); evidence in
@@ -162,7 +172,11 @@ Template-derived deviations, measured in `probe-support.log`:
    `Equipable` HEAD slot on every block item are not carried.
 6. **Fluid behaviour was not exercised**: the waterlogged *states* bind and the
    templates implement `SimpleWaterloggedBlock`, but the e2e sets the state
-   rather than flowing water into it.
+   rather than flowing water into it. **Closed at 0.2.1** —
+   `tools/data_parity.sh` places the block into a water cell for all eight
+   waterlogged families and reads `waterlogged=true`, with the air differential
+   and the stateless `illuminant_block` counterfactual; see
+   [`## Slice: carried-data parity`](#slice-carried-data-parity--waterlogging-021-2026-11-21-pin-0a875da).
 7. **The optional CTM resource pack** (`optional_fullblock_ctm`, a built-in
    client pack upstream) is not carried; the panel/slab `.mcmeta` overlays are.
 8. **No JEI plugin** (upstream ships one); Horizon's recipe viewer is built in.
@@ -220,6 +234,8 @@ content/carry/                             the raw `horizon-port-pack check` out
   the jar, read by no block) are skipped.
 
 Skills: superpowers/using-superpowers,writing-plans,systematic-debugging,verification-before-completion; BeautifulRust/rust-best-practices
+
+Skills: superpowers/using-superpowers,writing-plans,verification-before-completion; BeautifulRust/none (no Rust change) — documentation-consistency job (2026-11-19): the header pin line now states `0b14f8a`/`e59da90` (the retired bundle's `1d63e0a5` is labelled history), no code touched.
 
 ## Verification
 
@@ -725,3 +741,282 @@ Skills: superpowers/using-superpowers,brainstorming,writing-plans,test-driven-de
 | `gen_content.py` regeneration | run, then `diff -r` vs the retired tree | identical (`sdk-content-carry.log`) |
 | In-game e2e | — | **not run**: no launcher/no `0b14f8a` game (gap 1); the script refuses without `GAME=` |
 | Skills line | `python3 ports/tools/check-skills.py --notes ports/simplylight --strict` | PASS |
+
+## Content-only 0.2.0 — the registry's `kind = "mod"` rule (2026-11-19)
+
+**Why this section exists.** PR #1228 was rejected by the registry reviewer
+(`var/review-levzzz/1228.md`) for a **registry-immutability** violation, not a code one:
+`mods/simplylight.toml` already exists on `main` as `kind = "mod"` with a published
+`0.1.0`, and the PR *removed* that published version and *changed* the kind to
+`native-mod`. Published versions are never removed and a live project's kind is never
+changed. The reviewer allowed exactly two resolutions: (a) keep `kind = "mod"`,
+preserve `0.1.0`, and ship `0.2.0` as a content-only `.hmod`; or (b) publish the native
+port under a new id. **This port takes (a)**, because the native package registered
+nothing (below), so a content-only package loses no behaviour.
+
+### Hook inventory: the native package answered zero hooks
+
+Proved from the retired native package and its sources, not from the notes:
+
+| Evidence | What it shows |
+|---|---|
+| `src/lib.rs` (25 lines) | `pub mod runtime;` plus one `#[mod_api::horizon_mod] impl mod_api::Hooks for Mod {}` — **empty**. No `#[listener]`, no method override, no Part. |
+| `src/runtime.rs` (385 lines) | `#[cfg(test)] mod tests` from line 10 to the end: the census model (families, ids, template state spaces, light levels, drop rules) runs only under `cargo test`. No game type, no hook. |
+| `grep -rn "listener\|fn on_\|Hooks::" src/` | **no matches** |
+| `unzip -p simplylight.hmod uses.json` | 30 entries, of which four are real (`capability:registries`, `macro:horizon_mod`, `part:block`, `trait:Hooks`). `hook:blocks` is a **scanner false positive** from the test-local `let mut blocks = Vec::with_capacity(160);` (measured by three probe builds in the migration section: deleting `data/` changes nothing, swapping in `cloudglass`'s `src/` drops the list to the four real entries, renaming the test local removes `hook:blocks`). |
+| the 160 blocks, 2,048 states, 234 recipes, 12 tags | declared as **content** (`data/simplylight/horizon/block/`, `creative_tab/`, `loot_table/`, `recipe/`, `tags/`) and drawn from `assets/` — no Rust involved at any point. |
+
+**Hooks the package registers: none.** The behaviours that *would* need hooks — the
+redstone toggle of the two lamp blocks, the lamp-post 3-block column and its
+per-position light, the edge-light editor screen, the shift tooltips, the lamp-post
+item's attack damage and `Equipable` head slot — are **unported gaps** in both packages
+(`## Gaps after the migration`), so neither resolution of the reviewer's finding changes
+what a player gets. Under (a) a user loses **nothing**; under (b) the same mod would be
+listed twice, which is the worse outcome.
+
+**Residual benefit of (a):** the content-only package has no `src/`, so the false
+`hook:blocks` claim disappears from its `uses.json` — the registry's `--uses` review
+now reads a package that really has no code.
+
+### What changed in the tree
+
+| Before (native 0.2.0) | After (content-only 0.2.0) | Where the old file went |
+|---|---|---|
+| `horizon-mod.toml` with `[native]` (game/horizon/mixins pins) | same manifest **without `[native]`**, `version = "0.2.0"` | — |
+| `Cargo.toml`, `src/lib.rs`, `src/runtime.rs` | gone (a content mod may not carry a crate; `cargo horizon-mod build` refuses one) | `ports/_shared/evidence/simplylight/retired-native-0.2.0/` |
+| `simplylight.hmod` 700,196 B `4fcc82a2…2d3b` | `simplylight.hmod` **689,910 B** `433705de…5c50` | `…/retired-native-0.2.0/simplylight.hmod` |
+| `.horizon/sdk/`, `target/`, `Cargo.lock` | removed (build scratch; regenerated) | not evidence |
+| `README.md` describing the crate | rewritten: content mod, install, no code half | — |
+| `tools/e2e.sh` "needs a launcher build" | content leg on a plain `0b14f8a` game with `--dev-mod` | — |
+
+The delivered bytes are `horizon-mod.toml` + 882 `assets/` files + 572 `data/` files =
+**1,455 entries**. The licence text and the provenance notice still travel inside the
+package (`data/simplylight/license/license.txt`, `notice.txt`), which is what the entry's
+description promises; a content build does not pack the root `LICENSE`/`README.md`, so
+those two `data/` copies are the in-archive ones.
+
+### Verification (SDK `0b14f8a`, 2026-11-19)
+
+| Check | Command | Result |
+|---|---|---|
+| Build | `cargo horizon-mod build` (in a build slot, `CARGO_INCREMENTAL=0`) | `BUILD_EXIT:0`; a second build is byte-identical (`sdk-build-content.log`) |
+| Registry check | `cargo horizon-mod check simplylight.hmod` | `simplylight 0.2.0 (mod, API 0.2, both)`, **689,910 B**, SHA-256 `433705de1d8467c0ab076ae02a0b7ed447e65b068032414db694dc46992c5c50`, `no code: content only, nothing to run`, `CHECK_EXIT:0` (`sdk-check-content.log`) |
+| Fits | `cargo horizon-mod fits simplylight.hmod --build nightly` | "content mod, with no code to check against a build; `fits` doesn't apply" (`sdk-fits-content.log`) |
+| In-game default | `GAME=…/0b14f8a/control/horizon-client tools/e2e.sh` | **`PASS` + `EXIT:0`** — 2048/2048 states bind, light 15/14/0 as upstream, 9/9 blocks self-drop, six recipes craft against an empty stick control, tags hold, 160 items give and the tab lists 160, one item of every family places, unknown ids refused (`ports/_shared/evidence/simplylight-e2e/e2e-default.log`) |
+| Counterfactual (same game, **no** `--dev-mod`) | `COUNTERFACTUAL=1 tools/e2e.sh` | **`PASS` + `EXIT:0`** — the ids are `minecraft:air`/refused there, vanilla glowstone still emits 15 (`e2e-counterfactual.log`) |
+| Negative | `NEGATIVE=1 tools/e2e.sh` | **`FAIL` + `EXIT:1`** as required (`e2e-negative.log`) |
+| Selftest | `SELFTEST=1 tools/e2e.sh` | **`FAIL` + `EXIT:1`** as required (`e2e-selftest.log`) |
+| Log gate | `python3 ports/tools/check-e2e-logs.py simplylight-e2e --strict` | `logs=4 ok=4 missing-exit=0 bad-exit=0`, exit 0 |
+| Package gate | `python3 ports/tools/verify-sdk-package.py simplylight` | 1/1 |
+
+The game used is the campaign's plain `0b14f8a` export
+(`~/.cache/horizon-e2e/0b14f8a/control/horizon-client`) with the prepared root the
+launcher wrote for that pin (`…/versions/nightly-2026-11-18-0b14f8a/.local/horizon-client/26.3`);
+the older prepared root at `/home/adlf/Desktop/horizon/.local/horizon-client/26.3` is
+missing `fluid_state_definitions` in `block-behaviours.json` and the game refuses to
+start with it ("re-run horizon-prepare") — a trap for the next content leg.
+
+Skills: superpowers/using-superpowers,brainstorming,systematic-debugging,verification-before-completion; BeautifulRust/none (no Rust change) — the native crate was removed, not edited.
+
+### Changelog (0.2.0) — the text the registry PR carries
+
+> **0.2.0 — the port becomes a content-only package.** `simplylight` is a content carry of
+> Simply Light 1.5.3+1.21.1-b4 (MIT, by Flanks255) for Minecraft Java 26.3: 160 light blocks
+> in ten families × sixteen dye colours — off and on lamps, slabs, panels, wall lamps, bulbs,
+> rod lamps, three-block lamp posts and edge lights — with 2,048 states, 234 recipes, twelve
+> tags, models, textures and seven locales.
+> **What changed for `api = "0.2"`:** the package is now a plain content mod — `assets/` and
+> `data/` with a `horizon-mod.toml` (API 0.2, `side = "both"`, `capabilities = ["registries"]`)
+> — with **no `Cargo.toml`, no `src/` and no `[native]` block**. The port answers no game
+> moment: the 160 blocks are content declarations, and the census model the retired bundle
+> carried was test-only. Nothing a player sees changed: the 160 ids, 2,048 states, light
+> levels, drops, recipes, tags and creative tab are the same bytes.
+> Not ported yet: the redstone toggle of the lamps, the lamp-post column's per-position light,
+> the edge-light editor screen, tooltips, and the lamp-post item's attack damage.
+> Local-only until the maintainer approves publishing (MIT, rank 0).
+
+## Slice: carried-data parity + waterlogging (0.2.1, 2026-11-21, pin `0a875da`)
+
+**Why this slice.** The port's own record claimed the carried data was proven by "six recipes
+craft" and "9/9 blocks self-drop" (above, §"Behaviour carried"), while the package ships **234
+recipes** and **160 loot tables**, and its gap list names gap 6: *"Fluid behaviour was not
+exercised: the waterlogged **states** bind and the templates implement `SimpleWaterloggedBlock`,
+but the e2e sets the state rather than flowing water into it."* The parity ruling (AGENTS.md,
+2026-11-20) makes every carried recipe, loot table and tag a required in-game assertion — *"a
+carried recipe that is never crafted is dead data"* — so the highest-value remaining work at this
+pin was to turn the carried data from **registered** into **proven**. Class and tier are unchanged
+(**content / data**): no Rust, no native code, because the registry's `kind = "mod"` keeps a
+content-only package for every version (see §"Content-only 0.2.0").
+
+**What changed.** `version = "0.2.1"` in `horizon-mod.toml`; two new tools (`tools/data_parity.py`
+reads the recipes, tags and loot tables **out of the delivered `.hmod`** and drives the crafting
+grid; `tools/data_parity.sh` is the leg, including the waterlogging proof); the shipped `README.md`
+was updated (it is **not** packed by a content build — `cmp` and the same SHA-256 prove the data
+bytes did not move). The carried data itself is **unchanged**: a static comparison of every file
+against the jar shows **234/234 recipes semantically identical** (pattern, key, ingredients, result
+id and count) and **160/160 loot tables** in 26.3's singular typed-condition shape.
+
+### The red, before the fix
+
+The first assembled full sweep went red on **10 of the 234** recipes — every white-dye recolour —
+from this port's *harness* (the inventory expectation), not from the data:
+
+```
+[8/234] edge_light_dyed: 8 simplylight:edge_light (FAIL)
+[24/234] edge_light_top_dyed: 8 simplylight:edge_light_top (FAIL)
+[42/234] illuminant_block_dyed: 8 simplylight:illuminant_block (FAIL)
+[44/234] illuminant_block_on_dyed: 8 simplylight:illuminant_block_on (FAIL)
+[95/234] illuminant_panel_dyed: 8 simplylight:illuminant_panel (FAIL)
+[141/234] illuminant_slab_dyed: 8 simplylight:illuminant_slab (FAIL)
+[173/234] lamp_post_dyed: 8 simplylight:lamp_post (FAIL)
+[189/234] lightbulb_dyed: 8 simplylight:lightbulb (FAIL)
+[206/234] rodlamp_dyed: 8 simplylight:rodlamp (FAIL)
+[222/234] wall_lamp_dyed: 8 simplylight:wall_lamp (FAIL)
+FAIL: edge_light_dyed: the inventory holds 8 simplylight:edge_light after crafting, expected 0 (8 made, 8 consumed as ingredients)
+```
+
+`FAIL: the carried-data parity sweep failed` / `EXIT:1` —
+`ports/_shared/evidence/simplylight-e2e/e2e-parity-firstrun-harness-red.log`. The bug: a white-dye
+recipe uses the result item as its own ingredient, so the inventory reads
+`given − consumed + produced = produced`, not `produced − consumed`; the expectation was corrected
+to `result.count` (a grid that consumed nothing would read `2 × count`, which the assertion still
+catches, and the emptied grid is asserted separately).
+
+**No carried-data defect was found.** All 234 result stacks and all 160 loot drops matched at the
+first attempt once the harness was right, so there is nothing to "fix" in the data: inventing a
+minimal change would violate the upstream-defect rule (*a defect is a broken behaviour, not a design
+choice* — and the white-dye recipes are upstream's own, wasteful but not broken).
+
+Two harness reds that cost iterations (recorded so the next leg does not repeat them):
+
+1. **`ctl place` refuses a fluid cell** — `agent.rs` returns *"…holds minecraft:water; break it
+   first"* when the target is neither air nor replaceable, so a `SimpleWaterloggedBlock` can never be
+   made with it. The emissive proof must use the vanilla right-click path: select the item and
+   `ctl interact <x> 100 <z> up` on the support block under the water.
+2. **A wall between the player and the support hides its face** —
+   `{"error":"no face of block [21, 99, 0] is visible from here: minecraft:stone at [21, 100, 0] is
+   in the way"}`. The cells are therefore 10 blocks apart with no walls; a water source does not
+   reach even `x+7` on this flat floor (measured: `block 27 100 0` = air).
+3. **The shared `~/.cache/horizon-e2e/0a875da/control` export is not stable during a wave.** Another
+   job's `launcher-game.sh ensure` re-cut that directory mid-run and the leg died at recipe 208 with
+   `ctl click-slot 1: timeout: failed to run command '…/control/horizon-ctl': No such file or
+   directory`. Hardlink a private copy
+   (`~/.cache/opencode/simplylight-bin-0a875da/{horizon-client,horizon-ctl}`) and pass `GAME=`/`CTL=`;
+   the leg then runs on the same bytes regardless of other jobs.
+4. **The End's exit-portal frame sits at (0, ~100, 0) once the dragon is killed**, so the fluid cells
+   start at `x = 20` and the negative leg probes `20 120 0`; at `(0, 100, 0)` the cell is bedrock and
+   `interact` answers `… is in the way`.
+
+### In-game transcript (quoted, `0a875da` control game, `--dev-mod simplylight.hmod`)
+
+Gap 6 — a real placement into water, and its differentials:
+
+```
++ gap 6: flowing water into the eight waterlogged families (The End, real placement)
+  water: simplylight:illuminant_panel -> simplylight:illuminant_panel[facing=up,waterlogged=true]
+  water: simplylight:illuminant_slab -> simplylight:illuminant_slab[facing=up,waterlogged=true]
+  water: simplylight:wall_lamp -> simplylight:wall_lamp[facing=up,waterlogged=true]
+  water: simplylight:lightbulb -> simplylight:lightbulb[facing=up,waterlogged=true]
+  water: simplylight:rodlamp -> simplylight:rodlamp[axis=y,waterlogged=true]
+  water: simplylight:lamp_post -> simplylight:lamp_post[position=bottom,waterlogged=true]
+  water: simplylight:edge_light -> simplylight:edge_light[east=false,north=false,south=false,waterlogged=true,west=false]
+  water: simplylight:edge_light_top -> simplylight:edge_light_top[east=false,north=false,south=false,waterlogged=true,west=false]
++ the differential: the same placement in air is waterlogged=false
+  air: simplylight:illuminant_panel -> simplylight:illuminant_panel[facing=up,waterlogged=false]
+  air: simplylight:rodlamp -> simplylight:rodlamp[axis=y,waterlogged=false]
+  air: simplylight:lamp_post -> simplylight:lamp_post[position=bottom,waterlogged=false]
+  air: simplylight:edge_light -> simplylight:edge_light[east=false,north=false,south=false,waterlogged=false,west=false]
++ the counterfactual: a stateless block placed into water has no waterlogged property
+  water: simplylight:illuminant_block -> simplylight:illuminant_block[on=false]
+waterlogging PASS: 8/8 waterlogged families take the water at placement
+```
+
+Recipes and loot tables, read from the delivered archive:
+
+```
+[1/234] bulb: 8 simplylight:lightbulb (ok)
+…
+[234/234] walllamp: 6 simplylight:wall_lamp (ok)
+recipes PASS: 234/234 carried recipes craft their declared result id and count, every ingredient is consumed, and the output lands in the inventory
+[1/160] loot edge_light (ok)
+…
+[160/160] loot wall_lamp_yellow (ok)
+unknown table: {"chat": ["Can't find element 'simplylight:blocks/not_a_block' in registry 'minecraft:loot_table'", "...ot_a_block<--[HERE]"], "ok": true}
+loot PASS: 160/160 carried loot tables each give exactly one of their own block, and an unknown table is refused
+PASS: 234/234 carried recipes craft their declared result id and count with the
+unknown table is refused, and the eight waterlogged families take water at placement
+EXIT:0
+```
+
+(`EXIT:0`, `ports/_shared/evidence/simplylight-e2e/e2e-parity.log`.) The loot table is executed by
+`/loot give @s loot simplylight:blocks/<name>` and the reply is parsed as an inventory set — exactly
+one of the block and nothing else; the nine break-based drops in `tools/e2e.sh` remain the
+block-break path's evidence.
+
+### Fail-capability (every new assertion can fail)
+
+| leg | what it asserts | result | log |
+|---|---|---|---|
+| `SELFTEST=1` | the waterlogged panel must read `waterlogged=false` | `FAIL: SELFTEST: the deliberately wrong waterlogged=false assertion tripped on 'simplylight:illuminant_panel[facing=up,waterlogged=true]'` + `EXIT:1` | `e2e-parity-selftest.log` |
+| `SELFTEST=recipe` | the first recipe must yield one extra item | `FAIL: SELFTEST: bulb: expected result 9 simplylight:lightbulb, got ('simplylight:lightbulb', 8)` + `EXIT:1` | `e2e-parity-selftest-recipe.log` |
+| `NEGATIVE=1` | the same world **without** `--dev-mod`: the ids, the loot table and the item must be absent | `without the package, setblock simplylight:illuminant_panel reads 'minecraft:air'`; `/loot …` → `Can't find element 'simplylight:blocks/illuminant_block' in registry 'minecraft:loot_table'`; `FAIL: NEGATIVE: …` + `EXIT:1` | `e2e-parity-negative.log` |
+
+`python3 ports/tools/check-e2e-logs.py simplylight-e2e --strict` → `logs=9 ok=9
+missing-exit=0 bad-exit=0`, exit 0.
+
+### Coverage (every family in the jar)
+
+| family | state | proof |
+|---|---|---|
+| 160 blocks × 2048 states | **tested** | `e2e-default.log`: 160/160 defaults, 2048/2048 states bind |
+| light levels (15/14/0) | **tested** | `e2e-default.log`: the family table against glowstone 15 and stone 0 |
+| **234 recipes** | **tested** | `e2e-parity.log`: 234/234 craft the declared id and count, ingredients consumed |
+| **160 loot tables** | **tested** | `e2e-parity.log`: 160/160 give exactly their own block; 9 break-based in `e2e-default.log`; unknown table refused |
+| 13 tags (10 `any_*`, `c:stones`, 2 `c:dusts`) | **tested** | the recipes resolve every tag member; the 2 block tags in `e2e-default.log` |
+| creative tab, 160 items give/place | **tested** | `e2e-default.log` |
+| waterlogged states (8 families) | **tested** | `e2e-parity.log`: water at placement, the air differential and the stateless counterfactual |
+| redstone toggle of the lamps | **not ported** | needs `neighbor_changed` + a native crate; `kind = "mod"` forbids one |
+| lamp-post 3-block column, per-position light | **not ported** | placement logic; same rule |
+| edge-light sneak-use editor | **not ported** | client screen + packet; same rule |
+| shift tooltips | **not ported** | `native_tooltip`; same rule |
+| lamp-post item damage, `Equipable` head slot | **not ported** | item behaviour; same rule |
+| optional CTM resource pack | **not ported** | a built-in client pack upstream; not carried |
+| JEI plugin | **not ported** | Horizon's recipe viewer is built in |
+| worldgen | none | the mod ships none |
+
+### Verification (0.2.1, pin `0a875da` / mixins `e59da909…`)
+
+| Check | Command | Result |
+|---|---|---|
+| Build ×3 | `cargo horizon-mod build` with `rm -f Cargo.lock` before each | `BUILD_EXIT:0`, **689,910 B**, SHA-256 `7bbf9c31…9118b`, `cmp` byte-identical (`sdk-build-0.2.1.log`) |
+| Registry check | `cargo horizon-mod check simplylight.hmod` | `simplylight 0.2.1 (mod, API 0.2, both)`, 689,910 B, `no code: content only`, `CHECK_EXIT:0` (`sdk-check-parity.log`) |
+| Fits, the campaign pin | `cargo horizon-mod fits simplylight.hmod --build 0a875da` | `Simply Light is a content mod, with no code to check against a build; \`fits\` doesn't apply.` `FITS_EXIT:2` (`sdk-fits.log`) |
+| Fits, a different build | `… --build 0b14f8a` | the same line, `FITS_EXIT:2` (`sdk-fits-other.log`) |
+| Entries | `unzip -l simplylight.hmod` | **1,455 files**, no `Cargo.lock` (`sdk-entries-0.2.1.log`) |
+| Package gate | `python3 ports/tools/verify-sdk-package.py simplylight` | **1/1** |
+| Rust ladder | — | not applicable: a content-only package has **no crate** (no `Cargo.toml`, no `src/`) |
+
+**Why both `fits` lines are exit 2.** `fits` compares a *native* package's `[native]` pin with a
+build's surface; a content package carries no pin ("made for" cannot be printed for it, at any
+build), which is the tool's own verdict and unchanged from 0.2.0. There is no stale `0b14f8a made
+for` line here: the package names no build at all.
+
+### Changelog (0.2.1)
+
+> **0.2.1 — the carried data is proved in game, and gap 6 is closed.** No player-visible data
+> changed: the 160 blocks, 2,048 states, 234 recipes, 160 loot tables, 12 tags and seven locales are
+> the same bytes as 0.2.0 (a content build does not pack the README, so the archive is
+> byte-identical apart from the version). What is new is evidence: all **234 recipes** are crafted
+> in a real crafting table from the delivered archive, each asserting its declared result id and
+> count and that the grid was consumed; all **160 loot tables** are rolled and must give exactly
+> their own block (an unknown table is refused); and the **eight waterlogged families** are placed
+> into water — not state-set — and must read `waterlogged=true`, with the air differential and the
+> stateless `illuminant_block` counterfactual. Two new tools: `tools/data_parity.py` and
+> `tools/data_parity.sh`.
+> Still not ported: the redstone toggle of the lamps, the lamp-post column's per-position light and
+> place/break cascade, the edge-light editor screen, tooltips, and the lamp-post item's attack
+> damage — a content-only package (`kind = "mod"` for every version) cannot carry the crate they
+> need.
+> Local-only until the maintainer approves publishing (MIT, rank 0).
+
+Skills: superpowers/using-superpowers,brainstorming,writing-plans,test-driven-development,systematic-debugging,verification-before-completion; BeautifulRust/none (no Rust change) — a content-only port: the slice adds two in-game harness tools and a version bump, no crate exists to lint
